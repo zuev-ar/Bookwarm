@@ -8,46 +8,59 @@
 import SwiftUI
 import CoreData
 
-struct PushButton: View {
-    let title: String
-    @Binding var isOn: Bool
-    
-    var onColors = [Color.red, Color.yellow]
-    var offColors = [Color(white: 0.6), Color(white: 0.4)]
-    
-    var body: some View {
-        Button(title) {
-            self.isOn.toggle()
-        }
-        .padding()
-        .background(LinearGradient(gradient: Gradient(colors: isOn ? onColors : offColors), startPoint: .top, endPoint: .bottom))
-        .foregroundColor(.white)
-        .clipShape(Capsule())
-        .shadow(radius: isOn ? 0 : 5)
-    }
-}
-
 struct ContentView: View {
-    @State private var rememberMe = false
-    @Environment(\.horizontalSizeClass) var sizeClass
+    @Environment(\.managedObjectContext) var moc
+    @FetchRequest(entity: Student.entity(), sortDescriptors: []) var students: FetchedResults<Student>
     
     var body: some View {
-//        VStack {
-//            PushButton(title: "Remember Me", isOn: $rememberMe)
-//            Text(rememberMe ? "On" : "Off")
-//        }
-        if sizeClass == .compact {
-            return AnyView(VStack {
-                Text("Active size class:")
-                Text("COMPACT")
+        VStack {
+            List {
+                ForEach(students, id: \.id) { student in
+                    Text(student.name ?? "")
+                }
+                .onDelete(perform: deleteStudent)
             }
-            .font(.largeTitle))
-        } else {
-            return AnyView(HStack {
-                Text("Active size class:")
-                Text("REGULAR")
+            .toolbar {
+                EditButton()
+                Button(action: addStudent) {
+                    Label("Add", image: "plus")
+                }
             }
-            .font(.largeTitle))
+        }
+        
+        Button("Add") {
+            addStudent()
+        }
+    }
+    
+    private func addStudent() {
+        withAnimation {
+            let student = Student(context: moc)
+            student.id = UUID()
+            student.name = "No name"
+            
+            do {
+                try moc.save()
+            } catch {
+                let nsError = error as NSError
+                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            }
+        }
+    }
+    
+    private func deleteStudent(offsets: IndexSet) {
+        withAnimation {
+            for offset in offsets {
+                let student = students[offset]
+                moc.delete(student)
+            }
+            
+            do {
+                try moc.save()
+            } catch {
+                let nsError = error as NSError
+                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            }
         }
     }
 }
@@ -55,5 +68,6 @@ struct ContentView: View {
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
+            .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
     }
 }
