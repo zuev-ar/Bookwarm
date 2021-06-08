@@ -10,40 +10,35 @@ import CoreData
 
 struct ContentView: View {
     @Environment(\.managedObjectContext) var moc
-    @FetchRequest(entity: Student.entity(), sortDescriptors: []) var students: FetchedResults<Student>
+    @FetchRequest(entity: Book.entity(), sortDescriptors: []) var books: FetchedResults<Book>
+    
+    @State var showingAddScreen = false
     
     var body: some View {
-        VStack {
+        NavigationView {
             List {
-                ForEach(students, id: \.id) { student in
-                    Text(student.name ?? "")
+                ForEach(books, id: \.self) { book in
+                    NavigationLink(destination: Text(book.title ?? "Unknown Title")) {
+                        EmojiRatingView(rating: book.rating)
+                            .font(.largeTitle)
+                    }
+                    
+                    VStack(alignment: .leading) {
+                        Text(book.title ?? "Unknown Title")
+                            .font(.headline)
+                        Text(book.author ?? "Unknown Author")
+                            .foregroundColor(.secondary)
+                    }
                 }
-                .onDelete(perform: deleteStudent)
             }
-            .toolbar {
-                EditButton()
-                Button(action: addStudent) {
-                    Label("Add", image: "plus")
-                }
-            }
-        }
-        
-        Button("Add") {
-            addStudent()
-        }
-    }
-    
-    private func addStudent() {
-        withAnimation {
-            let student = Student(context: moc)
-            student.id = UUID()
-            student.name = "No name"
-            
-            do {
-                try moc.save()
-            } catch {
-                let nsError = error as NSError
-                fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            .navigationBarTitle("Bookworm")
+            .navigationBarItems(trailing: Button(action: {
+                self.showingAddScreen.toggle()
+            }) {
+                Image(systemName: "plus")
+            })
+            .sheet(isPresented: $showingAddScreen) {
+                AddBookView().environment(\.managedObjectContext, self.moc)
             }
         }
     }
@@ -51,8 +46,8 @@ struct ContentView: View {
     private func deleteStudent(offsets: IndexSet) {
         withAnimation {
             for offset in offsets {
-                let student = students[offset]
-                moc.delete(student)
+                let book = books[offset]
+                moc.delete(book)
             }
             
             do {
