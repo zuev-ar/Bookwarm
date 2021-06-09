@@ -42,6 +42,9 @@ struct DetailView: View {
                 RatingView(rating: .constant(Int(book.rating)))
                     .font(.largeTitle)
                 
+                Text(formattedDate(date: book.timestamp))
+                    .padding()
+                
                 Spacer()
             }
         }
@@ -69,6 +72,19 @@ struct DetailView: View {
 //        }
         
         presentationMode.wrappedValue.dismiss()
+    }
+    
+    func formattedDate(date: Date?) -> String {
+        if let date = date {
+            let dateFormatter = DateFormatter()
+//            dateFormatter.dateStyle = .long
+            dateFormatter.dateFormat = "dd MMMM yyyy, HH:mm"
+//            dateFormatter.dateStyle = .medium
+//            dateFormatter.timeStyle = .short
+            
+            return dateFormatter.string(from: date)
+        }
+        return ""
     }
 }
 
